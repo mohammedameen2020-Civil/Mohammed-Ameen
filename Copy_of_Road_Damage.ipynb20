@@ -1,0 +1,716 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Copy of Road Damage.ipynb",
+      "provenance": [],
+      "private_outputs": true,
+      "collapsed_sections": [],
+      "toc_visible": true,
+      "authorship_tag": "ABX9TyPMLE8S/B9ynR6wf3dcFG23",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/mohammedameen2020-Civil/Mohammed-Ameen/blob/master/Copy_of_Road_Damage.ipynb20\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "uhcelDfzEZBr",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import six.moves.urllib as urllib\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "PRCbkhSOE9KA",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#!wget https://mycityreport.s3-ap-northeast-1.amazonaws.com/02_RoadDamageDataset/public_data/Japan/CACAIE2018/RoadDamageDataset.tar.gz"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "cvbHgROZwbCh",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import os\n",
+        "try:\n",
+        "    import urllib.request\n",
+        "except ImportError:\n",
+        "    raise ImportError('You should use Python 3.x')\n",
+        "\n",
+        "if not os.path.exists('./RoadDamageDataset.tar.gz'):\n",
+        "    url_base = 'https://s3-ap-northeast-1.amazonaws.com/mycityreport/RoadDamageDataset.tar.gz'\n",
+        "    urllib.request.urlretrieve(url_base, './RoadDamageDataset.tar.gz')\n",
+        "    \n",
+        "    print(\"Download RoadDamageDataset.tar.gz Done\")\n",
+        "    \n",
+        "else:\n",
+        "    print(\"You have RoadDamageDataset.tar.gz\")"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eAfQS9jUyqqh",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#!wget https://mycityreport.s3-ap-northeast-1.amazonaws.com/02_RoadDamageDataset/public_data/Japan/CACAIE2018/trainedModels.tar.gz"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "48CX9vSOxXyC",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "if not os.path.exists('./trainedModels.tar.gz'):\n",
+        "    url_base = 'https://s3-ap-northeast-1.amazonaws.com/mycityreport/trainedModels.tar.gz'\n",
+        "    urllib.request.urlretrieve(url_base, './trainedModels.tar.gz')\n",
+        "    \n",
+        "    print(\"Download trainedModels.tar.gz Done\")\n",
+        "    \n",
+        "else:\n",
+        "    print(\"You have trainedModels.tar.gz\")"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "qlN0pQzvxm9u",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# this procces may take a few minutes\n",
+        "!tar -zxf ./RoadDamageDataset.tar.gz\n",
+        "!tar -zxf ./trainedModels.tar.gz"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "ixZiXEdZy_rg",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from xml.etree import ElementTree\n",
+        "from xml.dom import minidom\n",
+        "import collections\n",
+        "\n",
+        "import os\n",
+        "\n",
+        "import matplotlib.pyplot as plt\n",
+        "import matplotlib as matplot\n",
+        "import seaborn as sns\n",
+        "%matplotlib inline"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "DQcWDcLjzMip",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "base_path = os.getcwd() + '/RoadDamageDataset/'\n",
+        "\n",
+        "damageTypes=[\"D00\", \"D01\", \"D10\", \"D11\", \"D20\", \"D40\", \"D43\", \"D44\"]\n",
+        "\n",
+        "# govs corresponds to municipality name.\n",
+        "govs = [\"Adachi\", \"Chiba\", \"Ichihara\", \"Muroran\", \"Nagakute\", \"Numazu\", \"Sumida\"]"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "JLPg_b1hzQps",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# the number of total images and total labels.\n",
+        "cls_names = []\n",
+        "total_images = 0\n",
+        "for gov in govs:\n",
+        "    \n",
+        "    file_list = [filename for filename in os.listdir(base_path + gov + '/Annotations/') if not filename.startswith('.')]\n",
+        "\n",
+        "    for file in file_list:\n",
+        "\n",
+        "        total_images = total_images + 1\n",
+        "        if file =='.DS_Store':\n",
+        "            pass\n",
+        "        else:\n",
+        "            infile_xml = open(base_path + gov + '/Annotations/' +file)\n",
+        "            tree = ElementTree.parse(infile_xml)\n",
+        "            root = tree.getroot()\n",
+        "            for obj in root.iter('object'):\n",
+        "                cls_name = obj.find('name').text\n",
+        "                cls_names.append(cls_name)\n",
+        "print(\"total\")\n",
+        "print(\"# of images：\" + str(total_images))\n",
+        "print(\"# of labels：\" + str(len(cls_names)))"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "RzLSt6oezVKW",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# the number of each class labels.\n",
+        "import collections\n",
+        "count_dict = collections.Counter(cls_names)\n",
+        "cls_count = []\n",
+        "for damageType in damageTypes:\n",
+        "    print(str(damageType) + ' : ' + str(count_dict[damageType]))\n",
+        "    cls_count.append(count_dict[damageType])\n",
+        "    \n",
+        "sns.set_palette(\"winter\", 8)\n",
+        "sns.barplot(damageTypes, cls_count)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "QHuiVF2LzfYs",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# the number of each class labels for each municipality\n",
+        "for gov in govs:\n",
+        "    cls_names = []\n",
+        "    total_images = 0\n",
+        "    file_list = [filename for filename in os.listdir(base_path + gov + '/Annotations/') if not filename.startswith('.')]\n",
+        "\n",
+        "    for file in file_list:\n",
+        "\n",
+        "        total_images = total_images + 1\n",
+        "        if file =='.DS_Store':\n",
+        "            pass\n",
+        "        else:\n",
+        "            infile_xml = open(base_path + gov + '/Annotations/' +file)\n",
+        "            tree = ElementTree.parse(infile_xml)\n",
+        "            root = tree.getroot()\n",
+        "            for obj in root.iter('object'):\n",
+        "                cls_name = obj.find('name').text\n",
+        "                cls_names.append(cls_name)\n",
+        "    print(gov)\n",
+        "    print(\"# of images：\" + str(total_images))\n",
+        "    print(\"# of labels：\" + str(len(cls_names)))\n",
+        "    \n",
+        "    count_dict = collections.Counter(cls_names)\n",
+        "    cls_count = []\n",
+        "    for damageType in damageTypes:\n",
+        "        print(str(damageType) + ' : ' + str(count_dict[damageType]))\n",
+        "        cls_count.append(count_dict[damageType])\n",
+        "        \n",
+        "    print('**************************************************')"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6VUQkGG-zpMs",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#Check some images in this dataset¶\n",
+        "import cv2\n",
+        "import random"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "YvK1674Yzyxq",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "def draw_images(image_file):\n",
+        "    gov = image_file.split('_')[0]\n",
+        "    img = cv2.imread(base_path + gov + '/JPEGImages/' + image_file.split('.')[0] + '.jpg')\n",
+        "    \n",
+        "    infile_xml = open(base_path + gov + '/Annotations/' +image_file)\n",
+        "    tree = ElementTree.parse(infile_xml)\n",
+        "    root = tree.getroot()\n",
+        "    \n",
+        "    for obj in root.iter('object'):\n",
+        "        cls_name = obj.find('name').text\n",
+        "        xmlbox = obj.find('bndbox')\n",
+        "        xmin = int(xmlbox.find('xmin').text)\n",
+        "        xmax = int(xmlbox.find('xmax').text)\n",
+        "        ymin = int(xmlbox.find('ymin').text)\n",
+        "        ymax = int(xmlbox.find('ymax').text)\n",
+        "\n",
+        "        font = cv2.FONT_HERSHEY_SIMPLEX\n",
+        "\n",
+        "        # put text\n",
+        "        cv2.putText(img,cls_name,(xmin,ymin-10),font,1,(0,255,0),2,cv2.LINE_AA)\n",
+        "\n",
+        "        # draw bounding box\n",
+        "        cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0),3)\n",
+        "    return img"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "R0T-gascz4mH",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "for damageType in damageTypes:\n",
+        "    tmp = []\n",
+        "    for gov in govs:\n",
+        "        file = open(base_path + gov + '/ImageSets/Main/%s_trainval.txt' %damageType, 'r')\n",
+        "\n",
+        "        for line in file:\n",
+        "            line = line.rstrip('\\n').split('/')[-1]\n",
+        "\n",
+        "            if line.split(' ')[2] == '1':\n",
+        "                tmp.append(line.split(' ')[0]+'.xml')\n",
+        "        \n",
+        "        \n",
+        "    random.shuffle(tmp)\n",
+        "    fig = plt.figure(figsize=(6,6))\n",
+        "    for number, image in enumerate(tmp[0:1]):\n",
+        "        img = draw_images(image)\n",
+        "        plt.subplot(1,1,number+1)\n",
+        "        plt.axis('off')\n",
+        "        plt.title('The image including ' + damageType)\n",
+        "        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "SZf3G4ucz8ur",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#Next, try road damage detection using SSD_mobilenet! \n",
+        "#Imports\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "REs73G1H0o5p",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import numpy as np\n",
+        "import sys\n",
+        "import tarfile\n",
+        "import tensorflow as tf\n",
+        "import zipfile\n",
+        "\n",
+        "from collections import defaultdict\n",
+        "from io import StringIO\n",
+        "from matplotlib import pyplot as plt\n",
+        "from PIL import Image\n",
+        "\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "H29pTdR75wyy",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import sys\n",
+        "\n",
+        "sys.path"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6i3PBsUB73d5",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "%set_env PYTHONPATH=/root/models/research:/root/models/research/slim"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "UngOPmPl8S_L",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "sys.path.append(\"..\")"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "yNGe3PtTFl_P",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "pip install protobuf\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "h3EJeLY3J2zb",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "rm -rf ~/.cache/pip/*"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eyovNv0FtRDZ",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from python_utils import *\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "5xZ5BtwMux9j",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#pip install tensorflow-object-detection-api"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "I2pkoS5v1Nca",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#from utils import label_map_util\n",
+        "\n",
+        "#from python_utils import label_map_util \n",
+        "#from object_detection.utils import label_map_util \n",
+        "#from object_detection.protos import string_int_label_map_pb2\n",
+        "\n",
+        "from object_detection.utils import label_map_util\n",
+        "\n",
+        "from object_detection.utils import visualization_utils as vis_util\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "DjQ5vA2spkJp",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#!pip install --upgrade tensorflow"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "BiRAhLSNpw5E",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#!pip install tensorflow==1.4"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "497yRiUzqYMP",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "!pip show tensorflow\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "ApJM1ff45IY7",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# Path to frozen detection graph. This is the actual model that is used for the object detection.\n",
+        "PATH_TO_CKPT =  '/content/trainedModels/ssd_mobilenet_innference_graph.pb' \n",
+        "\n",
+        "# List of the strings that is used to add correct label for each box.\n",
+        "PATH_TO_LABELS = '/content/label_map.pbtxt'\n",
+        "\n",
+        "NUM_CLASSES = 8\n",
+        "\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "rCs086etIv6y",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "detection_graph = tf.Graph()\n",
+        "with detection_graph.as_default():\n",
+        "  od_graph_def = tf.GraphDef()\n",
+        "  with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:\n",
+        "    serialized_graph = fid.read()\n",
+        "    od_graph_def.ParseFromString(serialized_graph)\n",
+        "    tf.import_graph_def(od_graph_def, name='')\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "8km7ZHeXIziv",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "label_map = label_map_util.load_labelmap(PATH_TO_LABELS)\n",
+        "categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)\n",
+        "category_index = label_map_util.create_category_index(categories)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "Vq0mDJIg2Ol6",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "def load_image_into_numpy_array(image):\n",
+        "  (im_width, im_height) = image.size\n",
+        "  return np.array(image.getdata()).reshape(\n",
+        "      (im_height, im_width, 3)).astype(np.uint8)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6f4bB2ePQadP",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "!wget https://mycityreport.s3-ap-northeast-1.amazonaws.com/02_RoadDamageDataset/public_data/IEEE_bigdata_RDD2020/test1.tar.gz"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "Q5wJXFx1N4AB",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# get images from val.txt\n",
+        "PATH_TO_TEST_IMAGES_DIR = '/content/RoadDamageDataset/'\n",
+        "D_TYPE = ['D00', 'D01', 'D10', 'D11', 'D20','D40', 'D43']\n",
+        "govs = ['Adachi', 'Ichihara', 'Muroran', 'Chiba', 'Sumida', 'Nagakute', 'Numazu']\n",
+        "\n",
+        "val_list = []\n",
+        "for gov in govs:\n",
+        "    file = open(PATH_TO_TEST_IMAGES_DIR + gov + '/ImageSets/Main/val.txt', 'r')\n",
+        "    for line in file:\n",
+        "        line = line.rstrip('\\n').split('/')[-1]\n",
+        "        val_list.append(line)\n",
+        "    file.close()\n",
+        "\n",
+        "print(\"# of validation images：\" + str(len(val_list)))\n"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "liSzUwAsUqCx",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "TEST_IMAGE_PATHS=[]\n",
+        "random.shuffle(val_list)\n",
+        "\n",
+        "for val_image in val_list[0:5]:\n",
+        "    TEST_IMAGE_PATHS.append(PATH_TO_TEST_IMAGES_DIR + val_image.split('_')[0]+ '/JPEGImages/%s.jpg' %val_image)\n",
+        "# Size, in inches, of the output images.\n",
+        "IMAGE_SIZE = (12, 8)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "Zi_ncmnDN7v6",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "with detection_graph.as_default():\n",
+        "  with tf.Session(graph=detection_graph) as sess:\n",
+        "    # Definite input and output Tensors for detection_graph\n",
+        "    image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')\n",
+        "    # Each box represents a part of the image where a particular object was detected.\n",
+        "    detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')\n",
+        "    # Each score represent how level of confidence for each of the objects.\n",
+        "    # Score is shown on the result image, together with the class label.\n",
+        "    detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')\n",
+        "    detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')\n",
+        "    num_detections = detection_graph.get_tensor_by_name('num_detections:0')\n",
+        "    for image_path in TEST_IMAGE_PATHS:\n",
+        "      image = Image.open(image_path)\n",
+        "      # the array based representation of the image will be used later in order to prepare the\n",
+        "      # result image with boxes and labels on it.\n",
+        "      image_np = load_image_into_numpy_array(image)\n",
+        "      # Expand dimensions since the model expects images to have shape: [1, None, None, 3]\n",
+        "      image_np_expanded = np.expand_dims(image_np, axis=0)\n",
+        "      # Actual detection.\n",
+        "      (boxes, scores, classes, num) = sess.run(\n",
+        "          [detection_boxes, detection_scores, detection_classes, num_detections],\n",
+        "          feed_dict={image_tensor: image_np_expanded})\n",
+        "      # Visualization of the results of a detection.\n",
+        "      vis_util.visualize_boxes_and_labels_on_image_array(\n",
+        "          image_np,\n",
+        "          np.squeeze(boxes),\n",
+        "          np.squeeze(classes).astype(np.int32),\n",
+        "          np.squeeze(scores),\n",
+        "          category_index,\n",
+        "          min_score_thresh=0.3,\n",
+        "          use_normalized_coordinates=True,\n",
+        "          line_thickness=8)\n",
+        "      plt.figure(figsize=IMAGE_SIZE)\n",
+        "      plt.imshow(image_np)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
